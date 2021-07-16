@@ -1,14 +1,12 @@
 import login as l
-import analitic as a
 import json
 from selenium import webdriver
-
+import analitic as a
 
 from bs4 import BeautifulSoup
 import copy
 import csv
 import os
-import sys 
 import datetime
 
 
@@ -69,12 +67,18 @@ def table_url(url, url_arr): # Parse income table
     trs = {'new': [], 'old': []}
     arr = [url] + url_arr
     print(arr)
+    
     for u in range((len_earlier + 1)):
         print(arr[u])
-        pages_count = get_count_page(arr[u])
+        if(u == 0):
+            pages_count = get_count_page(arr[u])
         for page in range(1, (pages_count + 1)):
             # print(f'Парсинг страницы {page} из {pages_count}...')
-            l.driver.get(arr[u] + '?page=' + str(page))
+            if(u == 0):
+                l.driver.get(arr[u] + '?page=' + str(page))
+            else:
+                l.driver.get(arr[u])
+
             html = l.driver.page_source
             soup = BeautifulSoup(html, "html.parser")
             table = soup.find('tbody')
@@ -93,12 +97,16 @@ def module_parse(url): # Read module info
     soup2 = BeautifulSoup(html_file2, "html.parser")
     table_sell = soup2.find('tbody')
     links = table_sell.find_all('a')
-    links_text = []
+    links_text = {'strip': [], 'link': []}
     for link in links:
-        links_text.append(link.text.replace('\n', '').strip())
-    return links_text
+        links_text['strip'].append(link.text.replace('\n', '').strip())
+        links_text['link'].append(link['href'])
 
-links_text = module_parse(url_module)
+    return links_text
+module_parse_result = module_parse(url_module)
+
+links_text = module_parse_result['strip']
+links_clear = module_parse_result['link']
 
 
 def default_array(links): # Make default models array
@@ -189,7 +197,7 @@ def earlier_check(file, array):
         data['array_sells'].extend(array)
         
         with open(f'__pycache__/earlier_sells.json', 'w') as file:
-            json.dump(data, file, indent=3)
+            json.dump(data, file)
     return data['array_sells']
 
 trs_dict_old = earlier_check('earlier_sells.json', trs_dict_old)
